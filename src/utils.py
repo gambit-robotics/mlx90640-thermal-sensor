@@ -1,4 +1,4 @@
-"""Thermal Image Processing Utilities for MLX90641 Camera Module"""
+"""Thermal Image Processing Utilities for MLX90640 Camera Module."""
 import io
 import logging
 from typing import List

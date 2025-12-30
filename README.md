@@ -1,128 +1,177 @@
-# [`rand:waveshare-thermal` module](<https://github.com/randhid/waveshare-thermal>)
+# MLX90640 Thermal Sensor Module for Viam
 
-This [module](https://docs.viam.com/registry/#modular-resources) implements the [`rdk:components:sensor` and the `rdk:components:camera` APIs] in <rand:waveshare-thermal:mlx90641-ir-sensor> and  <rand:waveshare-thermal:mlx90641-ir-camera> models.
-With this module, you can use Waveshare's thermal cameras to detect temperatures and display an image of the associated heatmap that the IR lens senses from its environment.
+A Viam sensor and camera module for the [MLX90640 32x24 IR thermal sensor](https://www.melexis.com/en/product/MLX90640/Far-Infrared-Thermal-Sensor-Array). Returns temperature readings and generates thermal heatmap images via the Viam Sensor and Camera APIs.
 
-*Note*: The associated heatmap from the camera has been resized from its 24x32 pixel array to make it easier to see. However, this resized image would be unsuitable for algorithms that require precise temperatures. Please configure a<rand:waveshare-thermal:mlx90641-ir-sensor> and use the sensor's [`GetReadings`](https://docs.viam.com/appendix/apis/components/sensor/#getreadings) method to extract accurate data from this device.
+## Models
+
+- `gambit-robotics:sensor:mlx90640-ir-sensor` - Temperature sensor (768 pixel array)
+- `gambit-robotics:camera:mlx90640-ir-camera` - Thermal heatmap camera
 
 ## Requirements
 
-This module installs only on Raspberry Pi boards with Python >= 3.8, as RPi.GPIO is required for the current release.
+- Raspberry Pi or compatible SBC with I2C enabled
+- MLX90640 IR thermal sensor connected via I2C (default address: 0x33)
+- Python 3.11+
 
-The module should attempt to install `uv` to run, but if this Python package needs to be installed manually, you can install it with the following commands:
-```bash
-# On Linux.
-$ curl -LsSf https://astral.sh/uv/install.sh | sh
+## Configuration
 
-```
-
-```bash
-# With pip.
-$ pip install uv
-
-```
-
-## Configure your <rand:waveshare-thermal:mlx90641-ir-sensor> <rdk:component:sensor>
-
-Navigate to the [**CONFIGURE** tab](https://docs.viam.com/configure/) of your [machine](https://docs.viam.com/fleet/machines/) in [the Viam app](https://app.viam.com/).
-[Add `sensor`/ `waveshare-thermal:mlx90641-ir-sensor` to your machine](https://docs.viam.com/configure/#components).
-
-### Sensor Attributes
-No configuration attributes are required for the sensor, but you can set the refresh rate:
-```json
-{
-  "refresh_rate_hz": 2
-}
-```
-The following attributes are available for `rand:waveshare-thermal:mlx90641-ir-sensor` <rdk:component:sensor>s:
-
-| Name    | Type   | Required?    | Description |
-| ------- | ------ | ------------ | ----------- |
-| `refresh_rate_hz` | float | Optional | How often the sensor should refresh and report its readings. Default: 4 hz|
-
-## Configure your <rand:waveshare-thermal:mlx90641-ir-camera> <rdk:component:camera>
-
-Navigate to the [**CONFIGURE** tab](https://docs.viam.com/configure/) of your [machine](https://docs.viam.com/fleet/machines/) in [the Viam app](https://app.viam.com/).
-[Add `camera`/ `waveshare-thermal:mlx90641-ir-camera` to your machine](https://docs.viam.com/configure/#components).
-
-
-### Camera Attributes
-
-On the new component panel, copy and paste the following attribute template into your JSON configuration:
-```json
-{
-  "sensor": "<sensor-name>",
-  "flipped": true
-}
-```
-
-| Name    | Type   | Required?    | Description |
-| ------- | ------ | ------------ | ----------- |
-| `sensor` | string | **Required** | Name of the configured  <rand:waveshare-thermal:mlx90641-ir-sensor> on your machine.|
-| `flipped` | bool | Optional | Whether to flip the thermal camera's image.|
-
-### Example configuration
+Add this module to your Viam robot configuration:
 
 ```json
 {
-  "components": [
-    {
-      "name": "sensor-1",
-      "namespace": "rdk",
-      "type": "sensor",
-      "model": "rand:waveshare-thermal:mlx90641-ir-sensor",
-      "attributes": {}
-    },
-    {
-      "name": "camera-1",
-      "namespace": "rdk",
-      "type": "camera",
-      "model": "rand:waveshare-thermal:mlx90641-ir-camera",
-      "attributes": {
-        "sensor": "sensor-1"
-      },
-      "depends_on": [
-        "sensor-1"
-      ]
-    }
-  ],
   "modules": [
     {
       "type": "registry",
-      "name": "rand_waveshare-thermal",
-      "module_id": "rand:waveshare-thermal",
-      "version": "0.0.4"
+      "name": "gambit_mlx90640",
+      "module_id": "gambit-robotics:mlx90640-thermal-sensor"
+    }
+  ],
+  "components": [
+    {
+      "name": "thermal_sensor",
+      "namespace": "rdk",
+      "type": "sensor",
+      "model": "gambit-robotics:sensor:mlx90640-ir-sensor",
+      "attributes": {
+        "refresh_rate_hz": 4
+      }
+    },
+    {
+      "name": "thermal_camera",
+      "namespace": "rdk",
+      "type": "camera",
+      "model": "gambit-robotics:camera:mlx90640-ir-camera",
+      "attributes": {
+        "sensor": "thermal_sensor",
+        "flipped": false
+      },
+      "depends_on": ["thermal_sensor"]
     }
   ]
 }
 ```
 
-### Next steps
-You can write code using this module using the [sensor](https://docs.viam.com/appendix/apis/components/sensor/) or [camera](https://www.google.com/search?q=viam+camera+api) Viam APIs. 
+### Sensor Attributes
+
+| Attribute | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `refresh_rate_hz` | float | No | `4` | Sensor refresh rate. Valid: 0.5, 1, 2, 4, 8, 16, 32, 64 Hz |
+
+### Camera Configuration
+
+| Attribute | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `sensor` | string | **Yes** | - | Name of the configured MLX90640 sensor |
+| `flipped` | bool | No | `false` | Flip the thermal image horizontally |
+
+## Sensor Readings
+
+The sensor returns temperature readings via `get_readings()`:
+
+```python
+{
+    "min_temp_celsius": 22.5,
+    "max_temp_celsius": 35.2,
+    "min_temp_fahrenheit": 72.5,
+    "max_temp_fahrenheit": 95.4,
+    "all_temperatures_celsius": [...],      # 768 values (32x24 grid)
+    "all_temperatures_fahrenheit": [...],   # 768 values (32x24 grid)
+    "all_temperatures_fahrenheit_mirrored": [...]  # Horizontally mirrored
+}
+```
+
+| Key | Type | Description |
+|-----|------|-------------|
+| `min_temp_celsius` | float | Minimum temperature in the frame (Celsius) |
+| `max_temp_celsius` | float | Maximum temperature in the frame (Celsius) |
+| `min_temp_fahrenheit` | float | Minimum temperature in the frame (Fahrenheit) |
+| `max_temp_fahrenheit` | float | Maximum temperature in the frame (Fahrenheit) |
+| `all_temperatures_celsius` | list[float] | All 768 temperature readings (32x24) in Celsius |
+| `all_temperatures_fahrenheit` | list[float] | All 768 temperature readings (32x24) in Fahrenheit |
+| `all_temperatures_fahrenheit_mirrored` | list[float] | Mirrored temperature array |
+
+## Camera Output
+
+The camera component generates a thermal heatmap image from the sensor data:
+- Native resolution: 32x24 pixels
+- Output resolution: 240x320 pixels (upscaled for visualization)
+- Format: JPEG with false-color heatmap (blue=cold, red=hot)
+
+**Note:** The upscaled image is for visualization only and not suitable for ML training. Use the sensor's raw temperature array for precise data.
+
+## Hardware Setup
+
+1. Enable I2C on your Raspberry Pi:
+   ```bash
+   # Option A: Edit config
+   echo "dtparam=i2c_arm=on" | sudo tee -a /boot/firmware/config.txt
+   sudo reboot
+
+   # Option B: Use raspi-config
+   sudo raspi-config  # Interface Options > I2C > Enable
+   ```
+
+2. Connect the MLX90640 to your Pi:
+   - VIN to 3.3V
+   - GND to GND
+   - SDA to GPIO 2 (SDA)
+   - SCL to GPIO 3 (SCL)
+
+3. Verify the sensor is detected:
+   ```bash
+   sudo i2cdetect -y 1
+   # Should show 33 (default I2C address for MLX90640)
+   ```
 
 ## Troubleshooting
 
-Make sure that the I2C wires are connected to the [correct pins](https://pinout.xyz/ ): Connect the device's SDA to the SDA pin on the board and its SCL to the SCL pin on the Raspberry Pi.
+### Sensor not detected
+- Verify I2C wiring: SDA to SDA (GPIO 2), SCL to SCL (GPIO 3)
+- Check I2C is enabled: `sudo raspi-config` > Interface Options > I2C
+- Confirm address with `i2cdetect -y 1` (should show 0x33)
 
-When the device boots up, it follows a calibration sequence and will not show readings or an image immediately. Allow 5-10 seconds for the device to extract its calibration parameters and apply them, and then it will start measuring and reporting data. 
+### "Frame read failed: Too many retries"
+This typically occurs during sensor initialization or due to I2C timing issues:
+1. **Lower the refresh rate** - Try 2Hz instead of 4Hz, especially on Raspberry Pi 5
+2. **Wait for calibration** - Allow 5-10 seconds after boot for the sensor to calibrate
+3. **Check connections** - Ensure SCL/SDA are not shorted to power or ground
 
+### Slow or inconsistent readings
+- The MLX90640 requires time to stabilize after power-on
+- Higher refresh rates may cause I2C bus contention on slower systems
+- For reliable operation, start with 4Hz and adjust as needed
 
-"Frame read failed: Too many retries"
+## Local Development
 
-**Description:** This error typically occurs with IR camera modules and similar specialized cameras.
-It happens when the camera module is still initializing or calibrating itself, but `viam-server` is already attempting to read frames from it.
-This can also be caused by I2C communication issues between the board and the camera module, particularly on Raspberry Pi 5 systems.
+```bash
+# Clone the repository
+git clone https://github.com/gambit-robotics/mlx90640-thermal-sensor.git
+cd mlx90640-thermal-sensor
 
-**Solution:** Try one of the following approaches:
+# Create virtual environment and install dependencies
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
 
-1. **Reduce the refresh rate for I2C cameras**:
-   For I2C-based cameras (like some IR modules), try setting the refresh rate to a lower value (for example, 2Hz instead of 4Hz).
-   This can help with I2C bus timing issues, especially on Raspberry Pi 5 systems.
+## Testing on Hardware
 
-1. **Check physical connections**:
+```bash
+# On Raspberry Pi with MLX90640 connected
+./setup.sh
+./exec.sh
+```
 
-   - Ensure the camera module is properly connected.
-   - For I2C cameras, verify that the SCK (clock) pin is properly connected and not shorted to ground or power.
-     If the pin has been shorted, this can permanently damage the hardware.
+## Building for Registry
 
-If these steps don't resolve the issue, check your machine logs for additional error messages that might provide more specific information about the problem.
+```bash
+# Build the module tarball
+tar -czf module.tar.gz meta.json README.md LICENSE exec.sh setup.sh requirements.txt src
+
+# Upload to Viam registry
+viam module upload --version 1.0.0 --platform linux/arm64 module.tar.gz
+```
+
+## License
+
+Apache 2.0

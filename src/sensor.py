@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""MLX90641 IR Thermal Sensor and Camera Components."""
+"""MLX90640 IR Thermal Sensor Component."""
 
 import logging
 import os
@@ -39,12 +39,11 @@ CACHE_DURATION = 0.001  # 1ms cache duration
 MAX_RETRIES = 3
 BASE_DELAY = 0.05  # Base delay between retries in seconds
 
-## Implementation of the mlx90641 ir sensor
-## This returns an arrya of temperatures
+
 class MlxSensor(Sensor, EasyResource):
-    """MLX90641 IR Sensor Component."""
+    """MLX90640 32x24 IR Thermal Sensor Component."""
     MODEL: ClassVar[Model] = Model(
-        ModelFamily("rand", "waveshare-thermal"), "mlx90641-ir-sensor"
+        ModelFamily("gambit-robotics", "sensor"), "mlx90640-ir-sensor"
     )
 
     mlx : adafruit_mlx90640.MLX90640

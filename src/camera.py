@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""MLX90641 IR Thermal Sensor and Camera Components."""
+"""MLX90640 IR Thermal Camera Component."""
 
 import asyncio
 import logging
@@ -24,14 +24,15 @@ import utils
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-## Implementation of the Mlx90641 Camera
-## this uses the sensor to create an resized image so you can see
-## the thermal image it is producing
-## The image is not appropriate for use in training models
+
 class MlxCamera(Camera, EasyResource):
-    """MLX90641 IR Camera Component."""
+    """MLX90640 Thermal Heatmap Camera Component.
+
+    Uses the MLX90640 sensor to create a resized thermal heatmap image.
+    Note: The image is upscaled for visualization and not suitable for ML training.
+    """
     MODEL: ClassVar[Model] = Model(
-        ModelFamily("rand", "waveshare-thermal"), "mlx90641-ir-camera"
+        ModelFamily("gambit-robotics", "camera"), "mlx90640-ir-camera"
     )
     mlxsensor : Sensor
     heatmap_palette: List[int]
@@ -56,7 +57,7 @@ class MlxCamera(Camera, EasyResource):
         sensor_name = config.attributes.fields["sensor"].string_value
         if sensor_name == "":
             raise Exception(
-                "An mlx90641-ir-sensor attribute is required for an mlx90641-ir-camera."
+                "A sensor attribute is required for mlx90640-ir-camera."
                 )
 
         sensor = dependencies[Sensor.get_resource_name(sensor_name)]
@@ -73,7 +74,7 @@ class MlxCamera(Camera, EasyResource):
         sensor_name = config.attributes.fields["sensor"].string_value
         if sensor_name == "":
             raise Exception(
-                "An mlx90641-ir-sensor attribute is required for an mlx90641-ir-camera."
+                "A sensor attribute is required for mlx90640-ir-camera."
                 )
         return [sensor_name]
 

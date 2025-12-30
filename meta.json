@@ -1,30 +1,29 @@
 {
   "$schema": "https://dl.viam.dev/module.schema.json",
-  "module_id": "rand:waveshare-thermal",
-  "visibility": "public",
-  "url": "https://github.com/randhid/waveshare-thermal",
-  "description": "Modular camera and sensor component for the  mlx90641-ir thermal camera sensor",
+  "module_id": "gambit-robotics:mlx90640-thermal-sensor",
+  "visibility": "private",
+  "url": "https://github.com/gambit-robotics/mlx90640-thermal-sensor",
+  "description": "Viam sensor and camera module for the MLX90640 32x24 IR thermal sensor. Returns temperature readings and generates thermal heatmap images via the Viam Sensor and Camera APIs.",
   "models": [
     {
-      "api": "rdk:component:camera",
-      "model": "rand:waveshare-thermal:mlx90641-ir-camera",
-      "short_description": "thermal images for the mlx90641-ir on a waveshare breakout board connected by i2c",
-      "markdown_link": "README.md#camera-attributes"
+      "api": "rdk:component:sensor",
+      "model": "gambit-robotics:sensor:mlx90640-ir-sensor",
+      "short_description": "MLX90640 32x24 IR thermal sensor connected via I2C",
+      "markdown_link": "README.md#configuration"
     },
     {
-      "api": "rdk:component:sensor",
-      "model": "rand:waveshare-thermal:mlx90641-ir-sensor",
-      "short_description": "mlx90641-ir thermal sensor on a waveshare breakout board connected by i2c",
-      "markdown_link": "README.md#sensor-attributes"
+      "api": "rdk:component:camera",
+      "model": "gambit-robotics:camera:mlx90640-ir-camera",
+      "short_description": "Thermal heatmap camera using MLX90640 sensor data",
+      "markdown_link": "README.md#camera-configuration"
     }
   ],
-  "entrypoint": "run.sh",
+  "markdown_link": "README.md",
+  "entrypoint": "./exec.sh",
   "build": {
-    "build": "make module.tar.gz",
+    "setup": "./setup.sh",
+    "build": "tar -czf module.tar.gz meta.json README.md LICENSE exec.sh setup.sh requirements.txt src",
     "path": "module.tar.gz",
-    "arch": [
-      "linux/amd64",
-      "linux/arm64"
-    ]
+    "arch": ["linux/arm64", "linux/amd64"]
   }
 }

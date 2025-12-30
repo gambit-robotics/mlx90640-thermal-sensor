@@ -1,37 +1,39 @@
-#!/bin/sh
-cd `dirname $0`
+#!/bin/bash
+set -e
 
-# Create a virtual environment to run our code
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 VENV_NAME="venv"
-PYTHON="$VENV_NAME/bin/python"
-ENV_ERROR="This module requires Python >=3.8, pip, and virtualenv to be installed."
+PYTHON="python3"
 
-if ! python3 -m venv $VENV_NAME >/dev/null 2>&1; then
-    echo "Failed to create virtualenv."
-    if command -v apt-get >/dev/null; then
-        echo "Detected Debian/Ubuntu, attempting to install python3-venv automatically."
-        SUDO="sudo"
-        if ! command -v $SUDO >/dev/null; then
-            SUDO=""
-        fi
-		if ! apt info python3-venv >/dev/null 2>&1; then
-			echo "Package info not found, trying apt update"
-			$SUDO apt -qq update >/dev/null
-		fi
-        $SUDO apt install -qqy python3-venv >/dev/null 2>&1
-        if ! python3 -m venv $VENV_NAME >/dev/null 2>&1; then
-            echo $ENV_ERROR >&2
-            exit 1
-        fi
-    else
-        echo $ENV_ERROR >&2
-        exit 1
+# Install system lgpio package for Pi 5 GPIO support
+# This provides both the C library and Python bindings
+if command -v apt-get &> /dev/null; then
+    if ! python3 -c "import lgpio" 2>/dev/null; then
+        echo "Installing python3-lgpio system package..."
+        sudo apt-get update -qq
+        sudo apt-get install -y -qq python3-lgpio
     fi
 fi
 
-# remove -U if viam-sdk should not be upgraded whenever possible
-# -qq suppresses extraneous output from pip
-echo "Virtualenv found/created. Installing/upgrading Python packages..."
-if ! $PYTHON -m pip install -r requirements.txt -Uqq; then
-    exit 1
+# Check if existing venv has system-site-packages access
+# If not, delete it so we can recreate it properly (handles upgrades)
+if [ -d "$SCRIPT_DIR/$VENV_NAME" ]; then
+    if ! "$SCRIPT_DIR/$VENV_NAME/bin/python3" -c "import lgpio" 2>/dev/null; then
+        echo "Existing venv doesn't have system package access, recreating..."
+        rm -rf "$SCRIPT_DIR/$VENV_NAME"
+    fi
 fi
+
+# Create virtualenv with access to system packages (for lgpio)
+if [ ! -d "$SCRIPT_DIR/$VENV_NAME" ]; then
+    echo "Creating virtual environment..."
+    $PYTHON -m venv --system-site-packages "$SCRIPT_DIR/$VENV_NAME"
+fi
+
+# Activate and install dependencies
+echo "Installing dependencies..."
+source "$SCRIPT_DIR/$VENV_NAME/bin/activate"
+pip install --upgrade pip
+pip install -r "$SCRIPT_DIR/requirements.txt"
+
+echo "Setup complete."
