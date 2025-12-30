@@ -64,9 +64,7 @@ class MlxCamera(Camera, EasyResource):
         self.mlxsensor = cast(Sensor, sensor)
         self.heatmap_palette = utils.create_heatmap_palette()
 
-        flipped = config.attributes.fields["flipped"].bool_value
-        if flipped:
-            self._flipped = True
+        self._flipped = config.attributes.fields["flipped"].bool_value
 
     @classmethod
     def validate_config(cls, config: ComponentConfig) -> Sequence[str]:
