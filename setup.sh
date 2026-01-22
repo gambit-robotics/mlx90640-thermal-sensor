@@ -30,10 +30,9 @@ if [ ! -d "$SCRIPT_DIR/$VENV_NAME" ]; then
     $PYTHON -m venv --system-site-packages "$SCRIPT_DIR/$VENV_NAME"
 fi
 
-# Activate and install dependencies
+# Install dependencies using venv's pip explicitly (PEP 668 compliance)
 echo "Installing dependencies..."
-source "$SCRIPT_DIR/$VENV_NAME/bin/activate"
-pip install --upgrade pip
-pip install -r "$SCRIPT_DIR/requirements.txt"
+"$SCRIPT_DIR/$VENV_NAME/bin/pip" install --upgrade pip
+"$SCRIPT_DIR/$VENV_NAME/bin/pip" install -r "$SCRIPT_DIR/requirements.txt"
 
 echo "Setup complete."
