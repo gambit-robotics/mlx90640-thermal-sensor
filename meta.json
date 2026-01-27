@@ -9,13 +9,13 @@
       "api": "rdk:component:sensor",
       "model": "gambit-robotics:sensor:mlx90640-ir-sensor",
       "short_description": "MLX90640 32x24 IR thermal sensor connected via I2C",
-      "markdown_link": "README.md#configuration"
+      "markdown_link": "README.md#model-gambit-roboticssensormlx90640-ir-sensor"
     },
     {
       "api": "rdk:component:camera",
       "model": "gambit-robotics:camera:mlx90640-ir-camera",
       "short_description": "Thermal heatmap camera using MLX90640 sensor data",
-      "markdown_link": "README.md#camera-configuration"
+      "markdown_link": "README.md#model-gambit-roboticscameramlx90640-ir-camera"
     }
   ],
   "markdown_link": "README.md",

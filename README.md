@@ -1,70 +1,39 @@
-# MLX90640 Thermal Sensor Module for Viam
+# Module mlx90640-thermal-sensor
 
-A Viam sensor and camera module for the [MLX90640 32x24 IR thermal sensor](https://www.melexis.com/en/product/MLX90640/Far-Infrared-Thermal-Sensor-Array). Returns temperature readings and generates thermal heatmap images via the Viam Sensor and Camera APIs.
+The mlx90640-thermal-sensor module provides sensor and camera components for the [MLX90640 32x24 IR thermal sensor](https://seengreat.com/wiki/89/thermal-camera-mlx90640-d110). Returns temperature readings and generates thermal heatmap images.
+
+## Supported Platforms
+
+- **Linux ARM64** (Raspberry Pi)
 
 ## Models
 
-- `gambit-robotics:sensor:mlx90640-ir-sensor` - Temperature sensor (768 pixel array)
-- `gambit-robotics:camera:mlx90640-ir-camera` - Thermal heatmap camera
+This module provides the following model(s):
 
-## Requirements
+- [`gambit-robotics:sensor:mlx90640-ir-sensor`] - Temperature sensor (768 pixel array)
+- [`gambit-robotics:camera:mlx90640-ir-camera`] - Thermal heatmap camera
 
-- Raspberry Pi or compatible SBC with I2C enabled
-- MLX90640 IR thermal sensor connected via I2C (default address: 0x33)
-- Python 3.11+
+## Model gambit-robotics:sensor:mlx90640-ir-sensor
 
-## Configuration
+### Configuration
 
-Add this module to your Viam robot configuration:
+The following attribute template can be used to configure this model:
 
 ```json
 {
-  "modules": [
-    {
-      "type": "registry",
-      "name": "gambit_mlx90640",
-      "module_id": "gambit-robotics:mlx90640-thermal-sensor"
-    }
-  ],
-  "components": [
-    {
-      "name": "thermal_sensor",
-      "namespace": "rdk",
-      "type": "sensor",
-      "model": "gambit-robotics:sensor:mlx90640-ir-sensor",
-      "attributes": {
-        "refresh_rate_hz": 4
-      }
-    },
-    {
-      "name": "thermal_camera",
-      "namespace": "rdk",
-      "type": "camera",
-      "model": "gambit-robotics:camera:mlx90640-ir-camera",
-      "attributes": {
-        "sensor": "thermal_sensor",
-        "flipped": false
-      },
-      "depends_on": ["thermal_sensor"]
-    }
-  ]
+  "refresh_rate_hz": <float>
 }
 ```
 
-### Sensor Attributes
+#### Configuration Attributes
 
-| Attribute | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `refresh_rate_hz` | float | No | `4` | Sensor refresh rate. Valid: 0.5, 1, 2, 4, 8, 16, 32, 64 Hz |
+The following attributes are available for the `gambit-robotics:sensor:mlx90640-ir-sensor` model:
 
-### Camera Configuration
+| Name | Type | Inclusion | Default | Description |
+|------|------|-----------|---------|-------------|
+| `refresh_rate_hz` | float | Optional | `4` | Sensor refresh rate. Valid: 0.5, 1, 2, 4, 8, 16, 32, 64 Hz |
 
-| Attribute | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `sensor` | string | **Yes** | - | Name of the configured MLX90640 sensor |
-| `flipped` | bool | No | `false` | Flip the thermal image horizontally |
-
-## Sensor Readings
+### get_readings()
 
 The sensor returns temperature readings via `get_readings()`:
 
@@ -90,16 +59,45 @@ The sensor returns temperature readings via `get_readings()`:
 | `all_temperatures_fahrenheit` | list[float] | All 768 temperature readings (32x24) in Fahrenheit |
 | `all_temperatures_fahrenheit_mirrored` | list[float] | Mirrored temperature array |
 
-## Camera Output
+## Model gambit-robotics:camera:mlx90640-ir-camera
+
+### Configuration
+
+The following attribute template can be used to configure this model:
+
+```json
+{
+  "sensor": "<string>",
+  "flipped": <bool>
+}
+```
+
+#### Configuration Attributes
+
+The following attributes are available for the `gambit-robotics:camera:mlx90640-ir-camera` model:
+
+| Name | Type | Inclusion | Default | Description |
+|------|------|-----------|---------|-------------|
+| `sensor` | string | **Required** | - | Name of the configured MLX90640 sensor component |
+| `flipped` | bool | Optional | `false` | Flip the thermal image horizontally |
+
+### get_image()
 
 The camera component generates a thermal heatmap image from the sensor data:
+
 - Native resolution: 32x24 pixels
 - Output resolution: 240x320 pixels (upscaled for visualization)
 - Format: JPEG with false-color heatmap (blue=cold, red=hot)
 
 **Note:** The upscaled image is for visualization only and not suitable for ML training. Use the sensor's raw temperature array for precise data.
 
-## Hardware Setup
+### Hardware Requirements
+
+- Raspberry Pi or compatible SBC with I2C enabled
+- MLX90640 IR thermal sensor connected via I2C (default address: 0x33)
+- Python 3.11+
+
+#### Hardware Setup
 
 1. Enable I2C on your Raspberry Pi:
    ```bash
@@ -123,55 +121,20 @@ The camera component generates a thermal heatmap image from the sensor data:
    # Should show 33 (default I2C address for MLX90640)
    ```
 
-## Troubleshooting
+### Troubleshooting
 
-### Sensor not detected
+#### Sensor not detected
 - Verify I2C wiring: SDA to SDA (GPIO 2), SCL to SCL (GPIO 3)
 - Check I2C is enabled: `sudo raspi-config` > Interface Options > I2C
 - Confirm address with `i2cdetect -y 1` (should show 0x33)
 
-### "Frame read failed: Too many retries"
+#### "Frame read failed: Too many retries"
 This typically occurs during sensor initialization or due to I2C timing issues:
 1. **Lower the refresh rate** - Try 2Hz instead of 4Hz, especially on Raspberry Pi 5
 2. **Wait for calibration** - Allow 5-10 seconds after boot for the sensor to calibrate
 3. **Check connections** - Ensure SCL/SDA are not shorted to power or ground
 
-### Slow or inconsistent readings
+#### Slow or inconsistent readings
 - The MLX90640 requires time to stabilize after power-on
 - Higher refresh rates may cause I2C bus contention on slower systems
 - For reliable operation, start with 4Hz and adjust as needed
-
-## Local Development
-
-```bash
-# Clone the repository
-git clone https://github.com/gambit-robotics/mlx90640-thermal-sensor.git
-cd mlx90640-thermal-sensor
-
-# Create virtual environment and install dependencies
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-```
-
-## Testing on Hardware
-
-```bash
-# On Raspberry Pi with MLX90640 connected
-./setup.sh
-./exec.sh
-```
-
-## Building for Registry
-
-```bash
-# Build the module tarball
-tar -czf module.tar.gz meta.json README.md LICENSE exec.sh setup.sh requirements.txt src
-
-# Upload to Viam registry
-viam module upload --version 1.0.0 --platform linux/arm64 module.tar.gz
-```
-
-## License
-
-Apache 2.0
